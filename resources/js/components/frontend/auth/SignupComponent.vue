@@ -26,18 +26,28 @@
                 <div v-if="toggleValue" :class="errors.phone ? 'invalid' : ''"
                     class="flex items-center gap-1.5 px-4 h-12 rounded-lg border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
                     <div class="w-fit flex-shrink-0 dropdown-group">
-                        <button type="button" class="flex items-center gap-1 dropdown-btn">
+                        <button type="button" class="flex items-center gap-1 dropdown-btn" @click="codeSearch = ''">
                             {{ flag }}
                             <span class="whitespace-nowrap flex-shrink-0 text-xs">{{ form.country_code
                             }}</span>
                             <i class="fa-solid fa-caret-down text-xs"></i>
                         </button>
                         <ul
-                            class="p-1.5 w-24 rounded-lg shadow-xl absolute top-8 -left-4 z-10 border border-gray-200 bg-white scale-y-0 origin-top dropdown-list !h-52 !overflow-x-hidden !overflow-y-auto thin-scrolling">
-                            <li v-for="countryCode in countryCodes" @click="countryCodeChange(countryCode)"
+                            class="p-1.5 w-44 rounded-lg shadow-xl absolute top-8 -left-4 z-10 border border-gray-200 bg-white scale-y-0 origin-top dropdown-list !h-52 !overflow-x-hidden !overflow-y-auto thin-scrolling">
+                            <li class="sticky -top-1.5 -mx-1.5 -mt-1.5 mb-1 px-1.5 pt-1.5 pb-1 bg-white" @click.stop>
+                                <input type="text" v-model="codeSearch" @keydown.enter.prevent
+                                    :placeholder="$t('label.search')"
+                                    class="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary/40" />
+                            </li>
+                            <li v-for="(countryCode, index) in filteredCountryCodes" :key="index"
+                                @click="countryCodeChange(countryCode)"
                                 class="flex items-center gap-2 p-1.5 rounded-md cursor-pointer hover:bg-gray-100">
                                 {{ countryCode.flag_emoji }}
                                 <span class="whitespace-nowrap text-xs">{{ countryCode.calling_code }}</span>
+                            </li>
+                            <li v-if="filteredCountryCodes.length === 0"
+                                class="p-1.5 text-xs text-gray-400 text-center">
+                                {{ $t('message.no_data_found') }}
                             </li>
                         </ul>
 
@@ -98,6 +108,7 @@ export default {
                 country_code: "",
                 password: ""
             },
+            codeSearch: "",
             flag: "",
             errors: {},
             demo: ENV.DEMO,
@@ -110,6 +121,16 @@ export default {
     computed: {
         countryCodes: function () {
             return this.$store.getters['frontendCountryCode/lists'];
+        },
+        filteredCountryCodes: function () {
+            const q = (this.codeSearch || "").trim().toLowerCase().replace(/[+\s]/g, "");
+            if (!q) return this.countryCodes;
+            return this.countryCodes.filter((c) => {
+                const code = (c.calling_code || "").toLowerCase().replace(/[+\s]/g, "");
+                const nationality = (c.nationality || "").toLowerCase();
+                const capital = (c.capital || "").toLowerCase();
+                return code.includes(q) || nationality.includes(q) || capital.includes(q);
+            });
         },
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
@@ -155,6 +176,7 @@ export default {
         countryCodeChange: function (e) {
             this.flag = e.flag_emoji;
             this.form.country_code = e.calling_code;
+            this.codeSearch = "";
         },
         signup: function () {
             try {

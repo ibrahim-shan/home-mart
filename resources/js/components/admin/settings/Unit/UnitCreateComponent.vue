@@ -1,8 +1,8 @@
 <template>
     <LoadingComponent :props="loading" />
-    <SmModalCreateComponent :props="addButton" />
+    <SmModalCreateComponent v-if="showButton" :props="addButton" />
 
-    <div id="modal" class="modal">
+    <div :id="modalId" class="modal">
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.units") }}</h3>
@@ -88,7 +88,12 @@ import statusEnum from "../../../../enums/modules/statusEnum";
 export default {
     name: "UnitCreateComponent",
     components: { SmModalCreateComponent, LoadingComponent },
-    props: ["props"],
+    props: {
+        props: { type: Object, required: true },
+        modalId: { type: String, default: "modal" },
+        showButton: { type: Boolean, default: true },
+    },
+    emits: ["saved"],
     data() {
         return {
             loading: {
@@ -138,6 +143,7 @@ export default {
                         status: statusEnum.ACTIVE,
                     };
                     this.errors = {};
+                    this.$emit("saved", res.data.data);
                 }).catch((err) => {
                     this.loading.isActive = false;
                     this.errors = err.response.data.errors;

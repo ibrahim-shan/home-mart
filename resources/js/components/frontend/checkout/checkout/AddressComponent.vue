@@ -74,7 +74,8 @@
                         </label>
                         <div :class="errors.phone ? 'invalid' : ''" class="field-control flex items-center">
                             <div class="w-fit flex-shrink-0 dropdown-group">
-                                <button type="button" class="flex items-center gap-1 dropdown-btn">
+                                <button type="button" class="flex items-center gap-1 dropdown-btn"
+                                    @click="codeSearch = ''">
                                     {{ address.flag }}
                                     <span class="whitespace-nowrap flex-shrink-0 text-xs">
                                         {{ address.form.country_code }}
@@ -82,11 +83,22 @@
                                     <i class="fa-solid fa-caret-down text-xs"></i>
                                 </button>
                                 <ul
-                                    class="p-1.5 w-24 rounded-lg shadow-xl absolute top-8 -left-4 z-10 border border-gray-200 bg-white scale-y-0 origin-top dropdown-list !h-52 !overflow-x-hidden !overflow-y-auto thin-scrolling">
-                                    <li v-for="countryCode in countryCodes" @click.prevent="changeCountry(countryCode)"
+                                    class="p-1.5 w-44 rounded-lg shadow-xl absolute top-8 -left-4 z-10 border border-gray-200 bg-white scale-y-0 origin-top dropdown-list !h-52 !overflow-x-hidden !overflow-y-auto thin-scrolling">
+                                    <li class="sticky -top-1.5 -mx-1.5 -mt-1.5 mb-1 px-1.5 pt-1.5 pb-1 bg-white"
+                                        @click.stop>
+                                        <input type="text" v-model="codeSearch" @keydown.enter.prevent
+                                            :placeholder="$t('label.search')"
+                                            class="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary/40" />
+                                    </li>
+                                    <li v-for="(countryCode, index) in filteredCountryCodes" :key="index"
+                                        @click.prevent="changeCountry(countryCode)"
                                         class="flex items-center gap-2 p-1.5 rounded-md cursor-pointer hover:bg-gray-100">
                                         {{ countryCode.flag_emoji }}
                                         <span class="whitespace-nowrap text-xs">{{ countryCode.calling_code }}</span>
+                                    </li>
+                                    <li v-if="filteredCountryCodes.length === 0"
+                                        class="p-1.5 text-xs text-gray-400 text-center">
+                                        {{ $t('message.no_data_found') }}
                                     </li>
                                 </ul>
                             </div>
@@ -107,7 +119,7 @@
                         <vue-select
                             class="w-full h-12 px-4 rounded-lg text-base capitalize border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 appearance-none"
                             id="country" :class="errors.country ? 'invalid' : ''" v-model="address.form.country"
-                            @update:modelValue="callStates($event)" :options="countries" label-by="name" value-by="name"
+                            :options="countries" label-by="name" value-by="name"
                             :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                             search-placeholder="--" />
                         <small class="db-field-alert" v-if="errors.country">
@@ -119,26 +131,21 @@
                         <label class="text-sm font-medium capitalize mb-1 field-title required" for="state">
                             {{ $t('label.state') }}
                         </label>
-                        <vue-select
-                            class="w-full h-12 px-4 rounded-lg text-base capitalize border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 appearance-none"
-                            id="state" v-bind:class="errors.state ? 'invalid' : ''" v-model="address.form.state"
-                            @update:modelValue="callCities($event)" :options="address.states" label-by="name"
-                            value-by="name" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
-                            placeholder="--" search-placeholder="--" />
+                        <input type="text" id="state" v-model="address.form.state"
+                            :class="errors.state ? 'invalid' : ''"
+                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
                         <small class="db-field-alert" v-if="errors.state">
                             {{ errors.state[0] }}
                         </small>
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label class="text-sm font-medium capitalize mb-1 field-title required">
+                        <label class="text-sm font-medium capitalize mb-1 field-title required" for="city">
                             {{ $t('label.city') }}
                         </label>
-                        <vue-select
-                            class="w-full h-12 px-4 rounded-lg text-base capitalize border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500 appearance-none"
-                            id="city" v-bind:class="errors.city ? 'invalid' : ''" v-model="address.form.city"
-                            :options="address.cities" label-by="name" value-by="name" :closeOnSelect="true"
-                            :searchable="true" :clearOnClose="true" placeholder="--" search-placeholder="--" />
+                        <input type="text" id="city" v-model="address.form.city"
+                            :class="errors.city ? 'invalid' : ''"
+                            class="w-full h-12 px-4 rounded-lg text-base border border-[#D9DBE9] hover:border-primary/30 focus-within:border-primary/30 transition-all duration-500">
                         <small class="db-field-alert" v-if="errors.city">
                             {{ errors.city[0] }}
                         </small>
@@ -234,6 +241,8 @@ export default {
             },
             worldMapData: [],
             activeAddressId: null,
+            codeSearch: "",
+            profileUser: null,
             errors: {},
         }
     },
@@ -249,6 +258,16 @@ export default {
         },
         countries: function () {
             return this.$store.getters['frontendCountryStateCity/countries'];
+        },
+        filteredCountryCodes: function () {
+            const q = (this.codeSearch || "").trim().toLowerCase().replace(/[+\s]/g, "");
+            if (!q) return this.countryCodes;
+            return this.countryCodes.filter((c) => {
+                const code = (c.calling_code || "").toLowerCase().replace(/[+\s]/g, "");
+                const nationality = (c.nationality || "").toLowerCase();
+                const capital = (c.capital || "").toLowerCase();
+                return code.includes(q) || nationality.includes(q) || capital.includes(q);
+            });
         }
     },
     mounted() {
@@ -276,6 +295,7 @@ export default {
                 this.address.calling_code = res.data.data.calling_code;
                 this.address.flag = res.data.data.flag_emoji;
                 this.loading.isActive = false;
+                this.prefillFromProfile();
             }).catch((err) => {
                 this.loading.isActive = false;
             });
@@ -284,6 +304,28 @@ export default {
         });
     },
     methods: {
+        prefillFromProfile: function () {
+            const apply = (user) => {
+                if (!user) return;
+                if (!this.address.form.full_name) this.address.form.full_name = user.name || "";
+                if (!this.address.form.email) this.address.form.email = user.email || "";
+                if (!this.address.form.phone) this.address.form.phone = user.phone || "";
+                if (user.country_code) {
+                    this.address.form.country_code = user.country_code;
+                    this.$store.dispatch("frontendCountryCode/callingCode", user.country_code).then((r) => {
+                        this.address.flag = r.data.data.flag_emoji;
+                    }).catch(() => {});
+                }
+            };
+            if (this.profileUser) {
+                apply(this.profileUser);
+                return;
+            }
+            this.$store.dispatch("profile").then((res) => {
+                this.profileUser = res.data.data;
+                apply(this.profileUser);
+            }).catch(() => {});
+        },
         phoneNumber(e) {
             return appService.phoneNumber(e);
         },
@@ -300,6 +342,7 @@ export default {
         changeCountry: function (e) {
             this.address.flag = e.flag_emoji;
             this.address.form.country_code = e.calling_code;
+            this.codeSearch = "";
         },
         callStates: function (countryName) {
             this.address.form.state = null;
@@ -338,6 +381,7 @@ export default {
             };
             this.address.states = [];
             this.address.cities = [];
+            this.prefillFromProfile();
         },
         save: function () {
             try {
