@@ -4,7 +4,7 @@
 
 @layer base {
     :root {
-        --primary: 238 128 34;
+        --primary: 244 96 34;
         --primary-light: 249 203 124;
         --primary-slate: 234 98 38;
         --client-font: 'Urbanist', sans-serif;
@@ -473,6 +473,7 @@
     .modal-title { @apply capitalize text-lg font-medium }
     .modal-body { @apply p-4 }
     .modal-footer { @apply p-4 border-t border-slate-200 }
+    .inline-add-btn { @apply inline-flex items-center gap-1 text-xs font-medium text-primary leading-none hover:underline }
     .modal-btns { @apply flex flex-wrap justify-end gap-3 mt-3 }
     .modal-btn-fill { @apply inline-flex items-center gap-1.5 capitalize !text-sm py-1.5 px-3 rounded-md border border-primary text-white bg-primary }
     .modal-btn-outline { @apply inline-flex items-center gap-1.5 capitalize !text-sm py-1.5 px-3 rounded-md border border-gray-200 !text-gray-600 bg-white }

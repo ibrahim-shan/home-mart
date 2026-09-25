@@ -54,7 +54,13 @@
                             }}</small>
                         </div>
                         <div class="form-col-12 sm:form-col-6">
-                            <label class="db-field-title required">{{ $t("label.supplier") }}</label>
+                            <div class="flex items-center justify-between">
+                                <label class="db-field-title required">{{ $t("label.supplier") }}</label>
+                                <button type="button" @click="openModal('supplierModal')" class="inline-add-btn">
+                                    <i class="lab lab-line-add-circle"></i>
+                                    <span>{{ $t('button.add_new') }}</span>
+                                </button>
+                            </div>
 
                             <vue-select v-model="props.form.supplier_id" class="db-field-control f-b-custom-select"
                                 :options="suppliers" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
@@ -203,6 +209,10 @@
             </div>
         </form>
     </div>
+
+    <!-- Inline quick-add supplier (reuses the existing Settings Supplier create component) -->
+    <SupplierCreateComponent :props="supplierProps" modalId="supplierModal" :showButton="false"
+        @saved="onSupplierSaved" />
 </template>
 
 <script lang="js">
@@ -215,6 +225,7 @@ import ProductModalComponent from "../components/product/ProductModalComponent"
 import appService from '../../../services/appService';
 import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent.vue";
 import SmIconSidebarModalEditComponent from "../components/buttons/SmIconSidebarModalEditComponent";
+import SupplierCreateComponent from "../settings/Supplier/SupplierCreateComponent";
 
 export default {
     name: 'PurchaseCreateAndEditComponent',
@@ -224,7 +235,8 @@ export default {
         LoadingComponent,
         ProductModalComponent,
         SmIconDeleteComponent,
-        SmIconSidebarModalEditComponent
+        SmIconSidebarModalEditComponent,
+        SupplierCreateComponent
     },
     data() {
         return {
@@ -232,6 +244,16 @@ export default {
             productId: null,
             errors: {},
             datatable: [],
+            supplierProps: {
+                form: {
+                    company: "", name: "", email: "", phone: "", country_code: "",
+                    country: null, state: null, city: null, zip_code: "", address: "",
+                },
+                search: { paginate: 1, page: 1, per_page: 10, order_column: "id", order_type: "desc" },
+                flag: "",
+                states: [],
+                cities: [],
+            },
             loading: {
                 isActive: false
             },
@@ -318,6 +340,20 @@ export default {
     methods: {
         permissionChecker(e) {
             return appService.permissionChecker(e);
+        },
+        openModal(id) {
+            const el = document.querySelector("#" + id);
+            if (el) {
+                el.classList.add("active");
+                document.body.style.overflowY = "hidden";
+            }
+        },
+        onSupplierSaved(data) {
+            this.$store.dispatch('supplier/lists', { vuex: true }).then(() => {
+                if (data && data.id) {
+                    this.props.form.supplier_id = data.id;
+                }
+            }).catch(() => {});
         },
         changeFile: function (e) {
             this.file = e.target.files[0];

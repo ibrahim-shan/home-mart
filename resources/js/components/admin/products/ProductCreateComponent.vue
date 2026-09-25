@@ -30,9 +30,15 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="product_category_id" class="db-field-title required">
-                            {{ $t("label.category") }}
-                        </label>
+                        <div class="flex items-center justify-between">
+                            <label for="product_category_id" class="db-field-title required">
+                                {{ $t("label.category") }}
+                            </label>
+                            <button type="button" @click="openModal('categoryModal')" class="inline-add-btn">
+                                <i class="lab lab-line-add-circle"></i>
+                                <span>{{ $t('button.add_new') }}</span>
+                            </button>
+                        </div>
                         <vue-select ref="product_category_id" class="db-field-control f-b-custom-select"
                             id="product_category_id" v-bind:class="errors.product_category_id ? 'invalid' : ''"
                             v-model="props.form.product_category_id" :options="productCategories" label-by="option"
@@ -73,7 +79,13 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="tax_id" class="db-field-title">{{ $t("label.tax") }}</label>
+                        <div class="flex items-center justify-between">
+                            <label for="tax_id" class="db-field-title">{{ $t("label.tax") }}</label>
+                            <button type="button" @click="openModal('taxModal')" class="inline-add-btn">
+                                <i class="lab lab-line-add-circle"></i>
+                                <span>{{ $t('button.add_new') }}</span>
+                            </button>
+                        </div>
                         <vue-select ref="tax_id" class="db-field-control f-b-custom-select" id="tax_id"
                             v-bind:class="errors.tax_id ? 'invalid' : ''" v-model="props.form.tax_id" :options="taxes"
                             label-by="name" value-by="id" :closeOnSelect="true" :searchable="true" :clearOnClose="true"
@@ -82,7 +94,13 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label for="product_brand_id" class="db-field-title">{{ $t("label.brand") }}</label>
+                        <div class="flex items-center justify-between">
+                            <label for="product_brand_id" class="db-field-title">{{ $t("label.brand") }}</label>
+                            <button type="button" @click="openModal('brandModal')" class="inline-add-btn">
+                                <i class="lab lab-line-add-circle"></i>
+                                <span>{{ $t('button.add_new') }}</span>
+                            </button>
+                        </div>
                         <vue-select class="db-field-control f-b-custom-select" id="product_brand_id"
                             v-bind:class="errors.product_brand_id ? 'invalid' : ''"
                             v-model="props.form.product_brand_id" :options="productBrands" label-by="name" value-by="id"
@@ -206,7 +224,13 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-12">
-                        <label for="unit" class="db-field-title required">{{ $t("label.unit") }}</label>
+                        <div class="flex items-center justify-between">
+                            <label for="unit" class="db-field-title required">{{ $t("label.unit") }}</label>
+                            <button type="button" @click="openModal('unitModal')" class="inline-add-btn">
+                                <i class="lab lab-line-add-circle"></i>
+                                <span>{{ $t('button.add_new') }}</span>
+                            </button>
+                        </div>
                         <vue-select class="db-field-control f-b-custom-select" id="unit_id"
                             v-bind:class="errors.unit_id ? 'invalid' : ''" v-model="props.form.unit_id" :options="units"
                             label-by="name_code" value-by="id" :closeOnSelect="true" :searchable="true"
@@ -281,6 +305,14 @@
         </div>
     </div>
     </div>
+
+    <!-- Inline quick-add modals (reuse existing Settings create components) -->
+    <ProductCategoryCreateComponent :props="categoryProps" modalId="categoryModal" :showButton="false"
+        @saved="onCategorySaved" />
+    <ProductBrandCreateComponent :props="brandProps" modalId="brandModal" :showButton="false"
+        @saved="onBrandSaved" />
+    <TaxCreateComponent :props="taxProps" modalId="taxModal" :showButton="false" @saved="onTaxSaved" />
+    <UnitCreateComponent :props="unitProps" modalId="unitModal" :showButton="false" @saved="onUnitSaved" />
 </template>
 <script>
 import SmSidebarModalCreateComponent from "../components/buttons/SmSidebarModalCreateComponent";
@@ -293,11 +325,18 @@ import appService from "../../../services/appService";
 import VueTagsInput from "@sipec/vue3-tags-input";
 import { quillEditor } from 'vue3-quill';
 import { useCanvas } from "../../../composables/canvas";
+import ProductCategoryCreateComponent from "../settings/ProductCategory/ProductCategoryCreateComponent";
+import ProductBrandCreateComponent from "../settings/ProductBrand/ProductBrandCreateComponent";
+import TaxCreateComponent from "../settings/Tax/TaxCreateComponent";
+import UnitCreateComponent from "../settings/Unit/UnitCreateComponent";
 
 
 export default {
     name: "ProductCreateComponent",
-    components: { SmSidebarModalCreateComponent, LoadingComponent, quillEditor, VueTagsInput },
+    components: {
+        SmSidebarModalCreateComponent, LoadingComponent, quillEditor, VueTagsInput,
+        ProductCategoryCreateComponent, ProductBrandCreateComponent, TaxCreateComponent, UnitCreateComponent
+    },
     props: ['props'],
     data() {
         return {
@@ -328,6 +367,22 @@ export default {
             productBrands: [],
             taxes: [],
             barcodes: [],
+            categoryProps: {
+                form: { name: "", parent_id: null, description: "", status: statusEnum.ACTIVE },
+                search: { status: statusEnum.ACTIVE, parent_id: 0, order_column: "id", order_type: "desc" },
+            },
+            brandProps: {
+                form: { name: "", description: "", status: statusEnum.ACTIVE },
+                search: { paginate: 1, page: 1, per_page: 10, order_column: "id", order_type: "desc" },
+            },
+            taxProps: {
+                form: { name: "", code: "", tax_rate: "", status: statusEnum.ACTIVE },
+                search: { paginate: 1, page: 1, per_page: 10, order_column: "id", order_type: "desc" },
+            },
+            unitProps: {
+                form: { name: "", code: "", status: statusEnum.ACTIVE },
+                search: { paginate: 1, page: 1, per_page: 10, order_column: "id", order_type: "desc" },
+            },
         }
     },
     mounted() {
@@ -397,6 +452,51 @@ export default {
         },
         onlyNumber(e) {
             return appService.onlyNumber(e);
+        },
+        openModal(id) {
+            const el = document.querySelector("#" + id);
+            if (el) {
+                el.classList.add("active");
+                document.body.style.overflowY = "hidden";
+            }
+        },
+        onCategorySaved(data) {
+            this.$store.dispatch("productCategory/depthTrees", {}).then((res) => {
+                this.productCategories = res.data.data;
+                if (data && data.id) {
+                    this.props.form.product_category_id = data.id;
+                }
+            }).catch(() => {});
+        },
+        onBrandSaved(data) {
+            this.$store.dispatch("productBrand/lists", {
+                order_column: "id", order_type: "asc"
+            }).then((res) => {
+                this.productBrands = res.data.data;
+                if (data && data.id) {
+                    this.props.form.product_brand_id = data.id;
+                }
+            }).catch(() => {});
+        },
+        onTaxSaved(data) {
+            this.$store.dispatch("tax/lists", {
+                order_column: "id", order_type: "asc"
+            }).then((res) => {
+                this.taxes = res.data.data;
+                if (data && data.id && !this.props.form.tax_id.includes(data.id)) {
+                    this.props.form.tax_id.push(data.id);
+                }
+            }).catch(() => {});
+        },
+        onUnitSaved(data) {
+            this.$store.dispatch("unit/lists", {
+                order_column: "id", order_type: "asc"
+            }).then((res) => {
+                this.units = res.data.data;
+                if (data && data.id) {
+                    this.props.form.unit_id = data.id;
+                }
+            }).catch(() => {});
         },
         reset: function () {
             useCanvas().closeCanvas('sidebar');

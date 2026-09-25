@@ -45,11 +45,11 @@ class PaymentGatewayDataTableSeeder extends Seeder
             "options" => [
                 [
                     "option" => 'stripe_key',
-                    "value"  => env('STRIPE_KEY', ''),
+                    "value"  => '',
                 ],
                 [
                     "option" => 'stripe_secret',
-                    "value"  => env('STRIPE_SECRET', ''),
+                    "value"  => '',
                 ],
                 [
                     "option" => 'stripe_mode',
